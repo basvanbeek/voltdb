@@ -57,8 +57,8 @@ public class GeographyPointValue {
     static final double NULL_COORD = 360.0;
 
     public GeographyPointValue(double longitude, double latitude) {
-        m_latitude = latitude;
-        m_longitude = longitude;
+        m_latitude = latitude + 0.0;
+        m_longitude = longitude + 0.0;
 
         if (m_latitude < -90.0 || m_latitude > 90.0) {
             throw new IllegalArgumentException("Latitude out of range in GeographyPointValue constructor");
@@ -82,8 +82,8 @@ public class GeographyPointValue {
         }
         Matcher m = wktPattern.matcher(param);
         if (m.find()) {
-            double longitude = toDouble(m.group(1), m.group(2));
-            double latitude  = toDouble(m.group(3), m.group(4));
+            double longitude = toDouble(m.group(1), m.group(2)) + 0.0;
+            double latitude  = toDouble(m.group(3), m.group(4)) + 0.0;
             if (Math.abs(latitude) > 90.0) {
                 throw new IllegalArgumentException(String.format("Latitude \"%f\" out of bounds.", latitude));
             }
@@ -108,7 +108,9 @@ public class GeographyPointValue {
         // Display a maximum of 9 decimal digits after the point.
         // This gives us precision of around 1 mm.
         DecimalFormat df = new DecimalFormat("##0.0########");
-        return df.format(m_longitude) + " " + df.format(m_latitude);
+        double lng = (Math.abs(m_longitude) < 1.0e-9) ? 0 : m_longitude;
+        double lat = (Math.abs(m_latitude) < 1.0e-9) ? 0 : m_latitude;
+        return df.format(lng) + " " + df.format(lat);
     }
 
     @Override
@@ -191,5 +193,182 @@ public class GeographyPointValue {
     public static void serializeNull(ByteBuffer buffer) {
         buffer.putDouble(NULL_COORD);
         buffer.putDouble(NULL_COORD);
+    }
+
+    /**
+     * Let v be in the interval [k*range/2, (k+1)*range/2]. Then return
+     * the v-(k*range/2)-range/2.  If v is an integer multiple of
+     * range/2, then either -range/2 or range/2 is possible.  In this
+     * case, preserve the sign of v.
+     *
+     * For example, when range = 360, map t in [-180, 180] to itself,
+     * map t = -500 = (-540 + 40) to 40 and t = 710 = (720 - 10) to -10.
+     *
+     * This can be used to normalize longitude, with range=360.  Latitude is more
+     * difficult, however.  See {@link normalizeLatLng} below.
+     *
+     * @param v
+     * @param range
+     * @return
+     */
+    protected static GeographyPointValue normalizeLngLat(double longitude, double latitude) {
+        // Now compute the latitude.  We compute this in
+        // the range [-180, 180] and then fiddle with it.
+        // If it's out of the range [-90, 90], we need to
+        // flip it and then change the longitude.
+        double latNorm = normalize(latitude, 360);
+        double lngNorm = normalize(longitude, 360);
+        double latFinal = 0.0;
+        double lngFinal = 0.0;
+        assert(-180 <= latNorm && latNorm <= 180);
+        assert(-180 <= lngNorm && lngNorm <= 180);
+        // System.out.printf("        // longitude = %f, latitude = %f\n", longitude, latitude);
+        // System.out.printf("        // normLng   = %f, normLat  = %f\n", lngNorm, latNorm);
+        // Now, latOrig is the latitude in the range [-180,180].
+        // Let latWant be latitude in the range [-90, 90]. Then
+        // <ul>
+        //    <li>If latOrig > 90, we have latOrig + latWant = 180.  That
+        //        is, if we rotate our point starting at latOrig through
+        //        the angle latWant, we get +180.</li>
+        //    <li>If latOrig < 90, then we have latOrig - latWant = -180.
+        //        If we rotate our point, which is the southern hemisphere,
+        //        through the angle latWant, then we will have it at -180.</li>
+        // </ul>
+        // In either case, if we change the latitude we then need to change
+        // the longitude.  We want to reflect the longitude across the origin.
+        boolean flipLng = false;
+        if (latNorm > 90) {
+            // This is latWant.
+            latFinal = 180 - latNorm;
+            flipLng = true;
+        } else if (latNorm < -90) {
+            // This is lngWant.
+            latFinal = -latNorm - 180;
+            flipLng = true;
+        } else {
+            latFinal = latNorm;
+            lngFinal = lngNorm;
+        }
+        if (flipLng) {
+            if (lngNorm <= 0) {
+                // Since lngOrig is in [-180,0], we must have that
+                // lngOrig + 180 is in the range [0, 180].
+                // So, we are mapping 0 to 180.
+                lngFinal = lngNorm + 180;
+            } else {
+                // Since lngOrig is in the range [-0, 180] we must have
+                // that lngOrig - 180 is in the range [-180, 0].
+                // So, we are mapping -0 to -180.
+                lngFinal = lngNorm - 180;
+            }
+        }
+        assert(-180 <= lngFinal && lngFinal <= 180);
+        assert(-90 <= latFinal && latFinal <= 90);
+        // Return the point.
+        return new GeographyPointValue(lngFinal + 0.0, latFinal + 0.0);
+    }
+
+    // Normalize the value v to be in range [-range, range]
+    // by subtracting multiples of 360.
+    private static double normalize(double v, double range) {
+        double a = v-Math.floor((v + (range/2))/range)*range;
+        // Make sure that a and v have the same sign
+        // when abs(v) = 180.
+        if (Math.abs(a) == 180.0 && (a * v) < 0) {
+            a *= -1;
+        }
+        // The addition of 0.0 is to avoid negative
+        // zero, which just confuses things.
+        return a + 0.0;
+    }
+
+    /**
+     * Return a point which is offset by the given offset point.  The
+     * offset point is scaled by alpha.  That is, the return value is
+     * <code> this + alpha*offset</code>, except that Java does not
+     * allow us to write it in this way.
+     *
+     * In particular, <code>this - other</code> is equal to
+     * <code> add(other, -1)</code>, but fewer temporary objects are
+     * created.
+     *
+     * Normalize the coordinates.
+     * @param offset
+     * @return A new point offset by the scaled offset.
+     */
+    public GeographyPointValue add(GeographyPointValue offset, double alpha) {
+        // The addition of 0.0 converts
+        // -0.0 to 0.0.
+        return GeographyPointValue.normalizeLngLat(getLongitude() + alpha * offset.getLongitude() + 0.0,
+                                                   getLatitude()  + alpha * offset.getLatitude() + 0.0);
+    }
+
+    /**
+     * Add two points, and return a new point.
+     *
+     * @param offset The offset to add in.
+     * @return A new point which is this plus the offset.
+     */
+    public GeographyPointValue add(GeographyPointValue offset) {
+        return add(offset, 1.0);
+    }
+
+    /**
+     * Return <code>this - offset</code>.
+     *
+     * @param offset The offset to subtract from this.
+     * @return A new point translated by -offset.
+     */
+    public GeographyPointValue sub(GeographyPointValue offset) {
+        return add(offset, -1.0);
+    }
+
+    public GeographyPointValue sub(GeographyPointValue offset, double scale) {
+        return add(offset, -1.0 * scale);
+    }
+
+    /**
+     * Return a point scaled by the given alpha value.
+     *
+     * @param alpha
+     * @return The scaled point.
+     */
+    public GeographyPointValue mul(double alpha) {
+        return GeographyPointValue.normalizeLngLat(getLongitude() * alpha + 0.0,
+                                                   getLatitude() * alpha  + 0.0);
+    }
+
+    /**
+     * Return a new point which is this point rotated by the angle phi around a given center point.
+     *
+     * @param phi The angle to rotate.
+     * @param center The center of rotation.
+     * @return A new, rotated point.
+     */
+    public GeographyPointValue rotate(double phi, GeographyPointValue center) {
+        double sinphi = Math.sin(2*Math.PI*phi/360.0);
+        double cosphi = Math.cos(2*Math.PI*phi/360.0);
+
+        // Translate to the center.
+        double longitude = getLongitude() - center.getLongitude();
+        double latitude = getLatitude() - center.getLatitude();
+        // Rotate and translate back.
+        return GeographyPointValue.normalizeLngLat((cosphi * longitude - sinphi * latitude) + center.getLongitude(),
+                                                   (sinphi * longitude + cosphi * latitude) + center.getLatitude());
+    }
+
+    /**
+     * Return <code>alpha*(this - center) + center</code>.  This is
+     * used to scale the vector from center to this as an offset by
+     * alpha.  This is equivalent to <code>this.sub(center).mul(alpha).add(center)</code>,
+     * but with fewer object creations.
+     *
+     * @param center The origin of scaling.
+     * @param alpha The scale factor.
+     * @return
+     */
+    public GeographyPointValue scale(GeographyPointValue center, double alpha) {
+        return GeographyPointValue.normalizeLngLat(alpha*(getLongitude()-center.getLongitude()) + center.getLongitude(),
+                                                   alpha*(getLatitude()-center.getLatitude()) + center.getLatitude());
     }
 }

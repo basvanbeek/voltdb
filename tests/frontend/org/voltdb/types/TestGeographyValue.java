@@ -31,6 +31,12 @@ import java.util.List;
 import junit.framework.TestCase;
 
 public class TestGeographyValue extends TestCase {
+    private void assertEquals(GeographyPointValue expected, GeographyPointValue actual, double epsilon) {
+        String message = String.format("Expected: %s, actual %s", expected, actual);
+        assertTrue(message,
+                   Math.abs(expected.getLongitude() - actual.getLongitude()) < epsilon
+                   && Math.abs(expected.getLatitude() - actual.getLatitude()) < epsilon);
+    }
 
     public void testGeographyValuePositive() {
         GeographyValue geog;
@@ -47,14 +53,14 @@ public class TestGeographyValue extends TestCase {
                 new GeographyPointValue(-68.855, 25.361),
                 new GeographyPointValue(-73.381, 28.376),
                 new GeographyPointValue(-68.874, 28.066));
-
-        geog = new GeographyValue(Arrays.asList(outerLoop, innerLoop));
+        List<List<GeographyPointValue>> expectedLol = Arrays.asList(outerLoop, innerLoop);
+        geog = new GeographyValue(expectedLol);
         assertEquals("POLYGON((-64.751 32.305, -80.437 25.244, -66.371 18.476, -64.751 32.305), "
                 + "(-68.874 28.066, -68.855 25.361, -73.381 28.376, -68.874 28.066))",
                 geog.toString());
 
         // round trip
-        geog = new GeographyValue("POLYGON((-64.751 32.305, -80.437 25.244, -66.371 18.476, -64.751 32.305), "
+        geog = new GeographyValue("POLYGON ((-64.751 32.305, -80.437 25.244, -66.371 18.476, -64.751 32.305), "
                 + "(-68.874 28.066,-68.855 25.361, -73.381 28.376, -68.874 28.066))");
         assertEquals("POLYGON((-64.751 32.305, -80.437 25.244, -66.371 18.476, -64.751 32.305), "
                 + "(-68.874 28.066, -68.855 25.361, -73.381 28.376, -68.874 28.066))",
@@ -78,6 +84,36 @@ public class TestGeographyValue extends TestCase {
                 + "(-68.874 28.066, -68.855 25.361, -73.381 28.376, -68.874 28.066))",
                 newGeog.toString());
         assertEquals(77, buf.position());
+
+        // Try getting the loops as loops, and see if we get what we put in.
+        geog = new GeographyValue(expectedLol);
+        final double EPSILON = 1.0e-13;
+        List<List<GeographyPointValue>> lol = geog.getLoops();
+        assertEquals(expectedLol.size(), lol.size());
+        for (int oidx = 0; oidx < lol.size(); oidx += 1) {
+            List<GeographyPointValue> loop = lol.get(oidx);
+            List<GeographyPointValue> expectedLoop = expectedLol.get(oidx);
+            assertEquals(expectedLoop.size(), loop.size());
+            for (int iidx = 0; iidx < loop.size(); iidx += 1) {
+                GeographyPointValue expected = expectedLoop.get(iidx);
+                GeographyPointValue actual = loop.get(iidx);
+                assertEquals(expected, actual, EPSILON);
+            }
+        }
+    }
+
+    //
+    // Test GeographyValue objects which extend over the
+    // discontinuities between -180 and 180, and the poles.
+    //
+    public void testGeographyValueOverDiscontinuities() {
+        String geoWKT = "POLYGON((160.0 40.0, -160.0 40.0, -160.0 60.0, 160.0 60.0, 160.0 40.0))";
+        GeographyValue disPoly = GeographyValue.geographyValueFromText(geoWKT);
+        assertEquals(geoWKT, disPoly.toString());
+        GeographyPointValue offset = new GeographyPointValue(10.0, -10.0);
+        GeographyValue disPolyOver = disPoly.add(offset);
+        String geoWKTMoved = "POLYGON((170.0 30.0, -150.0 30.0, -150.0 50.0, 170.0 50.0, 170.0 30.0))";
+        assertEquals(geoWKTMoved, disPolyOver.toString());
     }
 
     public void testGeographyValueNegativeCases() {
@@ -256,4 +292,5 @@ public class TestGeographyValue extends TestCase {
         assertWktParseError("closing points of ring are not equal", "POLYGON ((10 10, 20 20, 30 30, 40 40))");
 
     }
+
 }
