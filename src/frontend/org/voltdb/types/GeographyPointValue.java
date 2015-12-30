@@ -57,6 +57,7 @@ public class GeographyPointValue {
     static final double NULL_COORD = 360.0;
 
     public GeographyPointValue(double longitude, double latitude) {
+        // Add 0.0 to avoid -0.0.
         m_latitude = latitude + 0.0;
         m_longitude = longitude + 0.0;
 
@@ -82,6 +83,7 @@ public class GeographyPointValue {
         }
         Matcher m = wktPattern.matcher(param);
         if (m.find()) {
+            // Add 0.0 to avoid -0.0.
             double longitude = toDouble(m.group(1), m.group(2)) + 0.0;
             double latitude  = toDouble(m.group(3), m.group(4)) + 0.0;
             if (Math.abs(latitude) > 90.0) {
@@ -109,6 +111,10 @@ public class GeographyPointValue {
         // Display a maximum of 12 decimal digits after the point.
         // This gives us precision of around 1/1000th of a mm.
         DecimalFormat df = new DecimalFormat("##0.0###########");
+        // Explicitly test for differences less than 1.0e-12 and
+        // force them to be zero.  Otherwise you may find a case
+        // where two points differ in the less significant bits, but
+        // they format as the same number.
         double lng = (Math.abs(m_longitude) < 1.0e-12) ? 0 : m_longitude;
         double lat = (Math.abs(m_latitude) < 1.0e-12) ? 0 : m_latitude;
         return df.format(lng) + " " + df.format(lat);

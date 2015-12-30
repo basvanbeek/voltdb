@@ -138,8 +138,10 @@ public class GeographyValue {
 
     /**
      * Gets the loops that make up the polygon, with the outer loop first.
-     * Include the loop back to the first vertex.
-     * @return  The loops in the polygon as a list of a list of points
+     * Include the loop back to the first vertex.  Also, reverse the order
+     * of holes, but keep the first vertex the same.
+     *
+     * @return  The loops in the polygon as a list of a list of points, converted to GeographyPointValue.
      */
     public List<List<GeographyPointValue>> getLoops() {
         List<List<GeographyPointValue>> llLoops = new ArrayList<List<GeographyPointValue>>();

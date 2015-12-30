@@ -128,6 +128,16 @@ public class TestPolygonFactory extends TestCase {
         return wkt.replaceAll("([0-9]), ", "$1,\n         ").replaceAll("[)], [(]", "),\n        (");
     }
 
+    /**
+     * This main routine is useful for manual testing.  The idea is that one
+     * runs this routine and WKT polygons are printed.  These can be displayed
+     * with qgis.
+     *
+     * It's unfortunate that there are no command line parameters to govern how
+     * this is to be run.
+     *
+     * @param arg
+     */
     public static void main(String arg[]) {
         GeographyPointValue center = origin;
         GeographyPointValue firstVertex = x.mul(0.1).add(y.mul(0.1));
