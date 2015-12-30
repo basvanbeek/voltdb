@@ -28,10 +28,17 @@ import org.voltdb.types.GeographyValue;
 public class PolygonFactory {
     /**
      * Create a regular convex polygon, with an optional hole.
+     *
+     * Note that the resulting polygon will be symmetric around any line
+     * through the center and a vertex.  Consequently, the centroid of such
+     * a polygon must be the center of the polygon.
+     *
      * @param center The center of the polygon.
      * @param firstVertex The coordinates of the first vertex.
      * @param numVertices The number of vertices.
      * @param sizeOfHole If this is positive, we also create a hole whose vertices are
+     *                   at the same angle from the polygon's center, but whose distance
+     *                   is scaled by sizeOfHole.  This value must be in the range [0,1).
      * @return
      */
     public static GeographyValue CreateRegularConvex(
@@ -70,6 +77,31 @@ public class PolygonFactory {
         return new GeographyValue(loops);
     }
 
+    /**
+     * Create a star-shaped polygon with an optional hole.  This polygon will have
+     * numPointsInStar outer points, and numPointsInStar inner points.  For each
+     * outer point, OP, distance(center, OP) = distance(center, firstVertex).  For
+     * each inner point, IP, distance(center, IP) = ratioOfPointLength*distance(center, firstVertex).
+     *
+     * If sizeOfHole is positive, then there is a hole with inner and outer vertices, as
+     * with the exterior shell.  For each hole exterior point, HEP,
+     *     distance(center, HEP) = sizeOfHole*distance(center, firstVertex).  For each
+     * hole interior point, HIP,
+     *     distance(center, HIP) = sizeOfHole*rationOfPointLength*distance(center, firstVertex).
+     * So, the hole is equal to the exterior shell scaled by the number sizeOfHole.
+     *
+     * Note that this polygon will be symmetric around any line through the center and
+     * an outer or inner point.  Consequently, the centroid of the generated polygon
+     * must be the center.
+     *
+     * @param center The center of the polygon.
+     * @param firstVertex The first vertex.
+     * @param numPointsInStar The number of exterior points in the star.
+     * @param ratioOfPointLength The outer/inner scale factor.  This must be in the range (0,1].
+     * @param sizeOfHole The scale factor for the hole.  This must be in the range [0,1).
+     * @return
+     * @throws IllegalArgumentException
+     */
     public static GeographyValue CreateStar(
             GeographyPointValue center,
             GeographyPointValue firstVertex,
