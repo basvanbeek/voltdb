@@ -32,6 +32,7 @@ import org.voltdb.VoltType;
 import org.voltdb.catalog.Table;
 import org.voltdb.planner.ParsedColInfo;
 import org.voltdb.planner.parseinfo.StmtTableScan;
+import org.voltdb.planner.parseinfo.StmtTargetTableScan;
 import org.voltdb.types.ExpressionType;
 
 /**
@@ -665,7 +666,7 @@ public abstract class AbstractExpression implements JSONString, Cloneable {
         return expr;
     }
 
-    public static List<AbstractExpression> fromJSONArrayString(String jsontext, StmtTableScan tableScan) throws JSONException
+    public static List<AbstractExpression> fromJSONArrayString(String jsontext, StmtTargetTableScan tableScan) throws JSONException
     {
         JSONArray jarray = new JSONArray(jsontext);
         List<AbstractExpression> result = new ArrayList<AbstractExpression>();
@@ -673,7 +674,7 @@ public abstract class AbstractExpression implements JSONString, Cloneable {
         return result;
     }
 
-    public static void fromJSONArrayString(String jsontext, StmtTableScan tableScan, List<AbstractExpression> result) throws JSONException
+    public static void fromJSONArrayString(String jsontext, StmtTargetTableScan tableScan, List<AbstractExpression> result) throws JSONException
     {
         result.addAll(fromJSONArrayString(jsontext, tableScan));
     }
