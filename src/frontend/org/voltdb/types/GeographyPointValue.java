@@ -23,6 +23,8 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class GeographyPointValue {
+    public static final int NUMBER_DIGITS_TOSTRING_PRECISION = 12;
+
     //
     // It's slightly hard to see this in the actual pattern
     // definition, but the pattern we want to match, ignoring space, is:
@@ -107,22 +109,40 @@ public class GeographyPointValue {
     }
 
 
+    /**
+     * Format this point as WKT.  Use the default precision.
+     */
     public String formatLngLat() {
-        // Display a maximum of 12 decimal digits after the point.
-        // This gives us precision of around 1/1000th of a mm.
-        DecimalFormat df = new DecimalFormat("##0.0###########");
+        return formatLngLat(NUMBER_DIGITS_TOSTRING_PRECISION);
+    }
+
+    /**
+     * Format this point as WKT.  Use the given number of
+     * decimal digits as precision.
+     */
+    public String formatLngLat(int ndigits) {
+        // Display a maximum of ndigits decimal digits after the point.
+        // Choosing the default, which is 12, gives us about
+        // 1 um = 1/1000 mm precision.
+        double epsilon = Math.pow(10.0, -ndigits);
+        StringBuilder sb = new StringBuilder(ndigits + 4);
+        sb.append("##0.0");
+        while (--ndigits > 0) {
+            sb.append("#");
+        }
+        DecimalFormat df = new DecimalFormat(sb.toString());
         // Explicitly test for differences less than 1.0e-12 and
         // force them to be zero.  Otherwise you may find a case
         // where two points differ in the less significant bits, but
         // they format as the same number.
-        double lng = (Math.abs(m_longitude) < 1.0e-12) ? 0 : m_longitude;
-        double lat = (Math.abs(m_latitude) < 1.0e-12) ? 0 : m_latitude;
+        double lng = (Math.abs(m_longitude) < epsilon) ? 0 : m_longitude;
+        double lat = (Math.abs(m_latitude) < epsilon) ? 0 : m_latitude;
         return df.format(lng) + " " + df.format(lat);
     }
 
     @Override
     public String toString() {
-        // This is not GEOGRAPY_POINT.  This is wkt syntax.
+        // This is not GEOGRAPHY_POINT.  This is wkt syntax.
         return "POINT (" + formatLngLat() + ")";
     }
 

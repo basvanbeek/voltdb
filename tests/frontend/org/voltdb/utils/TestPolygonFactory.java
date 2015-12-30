@@ -57,17 +57,19 @@ public class TestPolygonFactory extends TestCase {
 
     public void testRegularConvexPolygon() throws Exception {
         // Test a triangle.
+        // Note that we use 9 digits of precision here,
+        // for no good reason.
         GeographyValue pt3 = PolygonFactory.CreateRegularConvex(origin, y.mul(20.0), 3, 0);
-        String triangle = "POLYGON((0.0 20.0, -17.320508076 -10.0, 17.320508076 -10.0, 0.0 20.0))";
-        assertEquals(triangle, pt3.toString());
+        String triangle = "POLYGON ((0.0 20.0, -17.320508076 -10.0, 17.320508076 -10.0, 0.0 20.0))";
+        assertEquals(triangle, pt3.toString(9));
         // Test a square.
         GeographyValue pt4 = PolygonFactory.CreateRegularConvex(origin, y.mul(20).add(x.mul(20)), 4, 0);
-        String square = "POLYGON((20.0 20.0, -20.0 20.0, -20.0 -20.0, 20.0 -20.0, 20.0 20.0))";
-        assertEquals(square, pt4.toString());
+        String square = "POLYGON ((20.0 20.0, -20.0 20.0, -20.0 -20.0, 20.0 -20.0, 20.0 20.0))";
+        assertEquals(square, pt4.toString(9));
         GeographyPointValue offset = x.mul(20).add(y.mul(20));
         GeographyValue pt4plus = pt4.add(offset);
-        String squareOff = "POLYGON((40.0 40.0, 0.0 40.0, 0.0 0.0, 40.0 0.0, 40.0 40.0))";
-        assertEquals(squareOff, pt4plus.toString());
+        String squareOff = "POLYGON ((40.0 40.0, 0.0 40.0, 0.0 0.0, 40.0 0.0, 40.0 40.0))";
+        assertEquals(squareOff, pt4plus.toString(9));
         // For n = 3 to 10, generate a regular polygon with n points
         // centered at the origin starting at the given start vertex.
         GeographyPointValue startVertex = x.add(y);

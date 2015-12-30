@@ -173,6 +173,10 @@ public class GeographyValue {
      */
     @Override
     public String toString() {
+        return toString(GeographyPointValue.NUMBER_DIGITS_TOSTRING_PRECISION);
+    }
+
+    public String toString(int ndigits) {
         StringBuffer sb = new StringBuffer();
         sb.append("POLYGON (");
 
@@ -189,12 +193,12 @@ public class GeographyValue {
             sb.append(loop.get(0).toGeographyPointValue().formatLngLat()).append(", ");
             for (int idx = startIdx; idx != endIdx; idx += increment) {
                 XYZPoint xyz = loop.get(idx);
-                sb.append(xyz.toGeographyPointValue().formatLngLat());
+                sb.append(xyz.toGeographyPointValue().formatLngLat(ndigits));
                 sb.append(", ");
             }
 
             // Repeat the start vertex to close the loop as WKT requires.
-            sb.append(loop.get(0).toGeographyPointValue().formatLngLat());
+            sb.append(loop.get(0).toGeographyPointValue().formatLngLat(ndigits));
             sb.append(")");
             isFirstLoop = false;
         }
