@@ -129,20 +129,40 @@ public class FunctionForVoltDB extends FunctionSQL {
         static final int FUNC_VOLT_HEX                    = 20029;
         static final int FUNC_VOLT_BIN                    = 20030;
 
-        static final int FUNC_VOLT_POINTFROMTEXT                = 20031;
-        static final int FUNC_VOLT_POLYGONFROMTEXT              = 20032;
-        static final int FUNC_VOLT_CONTAINS                     = 20033;
-        static final int FUNC_VOLT_POLYGON_NUM_INTERIOR_RINGS   = 20034;
-        static final int FUNC_VOLT_POLYGON_NUM_POINTS           = 20035;
-        static final int FUNC_VOLT_POINT_LATITUDE               = 20036;
-        static final int FUNC_VOLT_POINT_LONGITUDE              = 20037;
-        static final int FUNC_VOLT_POLYGON_CENTROID             = 20038;
-        static final int FUNC_VOLT_POLYGON_AREA                 = 20039;
-        static final int FUNC_VOLT_DISTANCE                     = 20040;    // wrapper id for distance between all geo types
-        static final int FUNC_VOLT_DISTANCE_POINT_POINT         = 20041;    // distance between point and point
-        static final int FUNC_VOLT_DISTANCE_POLYGON_POINT       = 20042;    // distance between polygon and point
+        static final int FUNC_VOLT_DATEADD                = 20031;
+        static final int FUNC_VOLT_DATEADD_YEAR           = 20032;
+        static final int FUNC_VOLT_DATEADD_QUARTER        = 20033;
+        static final int FUNC_VOLT_DATEADD_MONTH          = 20034;
+        static final int FUNC_VOLT_DATEADD_DAY            = 20035;
+        static final int FUNC_VOLT_DATEADD_HOUR           = 20036;
+        static final int FUNC_VOLT_DATEADD_MINUTE         = 20037;
+        static final int FUNC_VOLT_DATEADD_SECOND         = 20038;
+        static final int FUNC_VOLT_DATEADD_MILLISECOND    = 20039;
+        static final int FUNC_VOLT_DATEADD_MICROSECOND    = 20040;
+        static final int FUNC_VOLT_REGEXP_POSITION        = 20041;
+        // Geospatial functions
+        static final int FUNC_VOLT_POINTFROMTEXT                = 21000;
+        static final int FUNC_VOLT_POLYGONFROMTEXT              = 21001;
+        static final int FUNC_VOLT_CONTAINS                     = 21002;
+        static final int FUNC_VOLT_POLYGON_NUM_INTERIOR_RINGS   = 21003;
+        static final int FUNC_VOLT_POLYGON_NUM_POINTS           = 21004;
+        static final int FUNC_VOLT_POINT_LATITUDE               = 21005;
+        static final int FUNC_VOLT_POINT_LONGITUDE              = 21006;
+        static final int FUNC_VOLT_POLYGON_CENTROID             = 21007;
+        static final int FUNC_VOLT_POLYGON_AREA                 = 21008;
+        static final int FUNC_VOLT_DISTANCE                     = 21009;    // wrapper id for distance between all geo types
+        static final int FUNC_VOLT_DISTANCE_POINT_POINT         = 21010;    // distance between point and point
+        static final int FUNC_VOLT_DISTANCE_POLYGON_POINT       = 21011;    // distance between polygon and point
+        static final int FUNC_VOLT_ASTEXT                       = 21012;    // wrapper for asText function for all geo types
+        static final int FUNC_VOLT_ASTEXT_GEOGRAPHY_POINT       = 21013;    // point to text
+        static final int FUNC_VOLT_ASTEXT_GEOGRAPHY             = 21014;    // polygon to text
+        static final int FUNC_VOLT_VALIDATE_POLYGON             = 21015;    // Polygon validation.
+        static final int FUNC_VOLT_POLYGON_INVALID_REASON       = 21016;    // Reason a polygon may be invalid.
 
 
+        /*
+         * Note: The name must be all lower case.
+         */
         private static final FunctionId[] instances = {
 
             new FunctionId("sql_error", null, FUNC_VOLT_SQL_ERROR, 0,
@@ -238,6 +258,18 @@ public class FunctionForVoltDB extends FunctionSQL {
                     new Type[] { Type.SQL_BIGINT },
                     new short[] {  Tokens.OPENBRACKET, Tokens.QUESTION, Tokens.CLOSEBRACKET }),
 
+            new FunctionId("dateadd", Type.SQL_TIMESTAMP, FUNC_VOLT_DATEADD, -1,
+                    new Type[] { Type.SQL_VARCHAR, Type.SQL_BIGINT, Type.SQL_TIMESTAMP },
+                    new short[] { Tokens.OPENBRACKET, Tokens.X_KEYSET, 11, Tokens.YEAR,
+                                  Tokens.QUARTER, Tokens.MONTH, Tokens.DAY, Tokens.HOUR, Tokens.MINUTE, Tokens.SECOND,
+                                  Tokens.MILLIS, Tokens.MILLISECOND, Tokens.MICROS, Tokens.MICROSECOND, Tokens.COMMA,
+                                  Tokens.QUESTION, Tokens.COMMA, Tokens.QUESTION, Tokens.CLOSEBRACKET }),
+
+            new FunctionId("regexp_position", Type.SQL_BIGINT, FUNC_VOLT_REGEXP_POSITION, -1,
+                    new Type[] { Type.SQL_VARCHAR, Type.SQL_VARCHAR, Type.SQL_VARCHAR },
+                    new short[] { Tokens.OPENBRACKET, Tokens.QUESTION, Tokens.COMMA, Tokens.QUESTION,
+                                  Tokens.X_OPTION, 2, Tokens.COMMA, Tokens.QUESTION, Tokens.CLOSEBRACKET}),
+
             new FunctionId("pointfromtext", Type.VOLT_GEOGRAPHY_POINT, FUNC_VOLT_POINTFROMTEXT, -1,
                     new Type[] { Type.SQL_VARCHAR },
                     new short[] {  Tokens.OPENBRACKET, Tokens.QUESTION, Tokens.CLOSEBRACKET }),
@@ -283,6 +315,18 @@ public class FunctionForVoltDB extends FunctionSQL {
                     new Type[] { Type.SQL_ALL_TYPES, Type.SQL_ALL_TYPES },
                     new short[] {  Tokens.OPENBRACKET, Tokens.QUESTION, Tokens.COMMA,
                                    Tokens.QUESTION, Tokens.CLOSEBRACKET }),
+
+            new FunctionId("isvalid", Type.SQL_BOOLEAN, FUNC_VOLT_VALIDATE_POLYGON, -1,
+                    new Type[] { Type.VOLT_GEOGRAPHY },
+                    new short[] { Tokens.OPENBRACKET, Tokens.QUESTION, Tokens.CLOSEBRACKET }),
+
+            new FunctionId("isinvalidreason", Type.SQL_VARCHAR, FUNC_VOLT_POLYGON_INVALID_REASON, -1,
+                    new Type[] { Type.VOLT_GEOGRAPHY },
+                    new short[] { Tokens.OPENBRACKET, Tokens.QUESTION, Tokens.CLOSEBRACKET }),
+
+            new FunctionId("astext", Type.SQL_VARCHAR, FUNC_VOLT_ASTEXT, -1,
+                    new Type[] { Type.SQL_ALL_TYPES },
+                    new short[] {  Tokens.OPENBRACKET, Tokens.QUESTION, Tokens.CLOSEBRACKET }),
         };
 
         private static Map<String, FunctionId> by_LC_name = new HashMap<String, FunctionId>();
@@ -490,22 +534,24 @@ public class FunctionForVoltDB extends FunctionSQL {
             // validate the types of argument is valid
             if ((nodes[0].dataType == null && nodes[0].isParam) ||
                 (nodes[1].dataType == null && nodes[1].isParam)) {
-                // todo: throw exception indicating the type is ambigous
-                throw Error.error(ErrorCode.X_42561);
+                // "data type cast needed for parameter or null literal"
+                throw Error.error(ErrorCode.X_42567,
+                        "input type to DISTANCE function is ambiguous");
             }
             else if (nodes[0].dataType == null || nodes[1].dataType == null) {
-                // todo: throw exception indicating the type invalid type
-                throw Error.error(ErrorCode.X_42561);
+                // "data type cast needed for parameter or null literal"
+                throw Error.error(ErrorCode.X_42567,
+                        "input type to DISTANCE function is ambiguous");
             }
             else if ((!nodes[0].dataType.isGeographyType() && !nodes[0].dataType.isGeographyPointType()) ||
                      (!nodes[1].dataType.isGeographyType() && !nodes[1].dataType.isGeographyPointType())) {
                 // either of the nodes is not a valid type
                 throw Error.error(ErrorCode.X_42565,
-                        "The distance function is only able to compute point-to-point, point-to-polygon " +
-                        "and polygon-to-point distances.");
+                        "The DISTANCE function computes distances between POINT-to-POINT, POINT-to-POLYGON " +
+                        "and POLYGON-to-POINT only.");
             } else if (nodes[0].dataType.isGeographyType() && nodes[1].dataType.isGeographyType()) {
                 // distance between two polygons is not supported, flag as an error
-                throw Error.error(ErrorCode.X_42565, "Distance between two polygons not supported");
+                throw Error.error(ErrorCode.X_42565, "DISTANCE between two POLYGONS not supported");
             } else if (nodes[0].dataType.isGeographyPointType() && nodes[1].dataType.isGeographyType()) {
                 // distance between polygon-to-point and point-to-polygon is symmetric.
                 // So, update the the expression for distance between point and polygon to
@@ -514,6 +560,21 @@ public class FunctionForVoltDB extends FunctionSQL {
                 Expression tempNode = nodes[0];
                 nodes[0] = nodes[1];
                 nodes[1] = tempNode;
+            }
+            break;
+
+
+        case FunctionId.FUNC_VOLT_ASTEXT:
+            if (nodes[0].dataType == null) {
+                // "data type cast needed for parameter or null literal"
+                throw Error.error(ErrorCode.X_42567,
+                        "input type to ASTEXT function is ambiguous");
+            }
+
+            if (! (nodes[0].dataType.isGeographyPointType() || nodes[0].dataType.isGeographyType())) {
+                // "incompatible data type in operation"
+                throw Error.error(ErrorCode.X_42565,
+                        "The asText function accepts only GEOGRAPHY and GEOGRAPHY_POINT types.");
             }
             break;
 

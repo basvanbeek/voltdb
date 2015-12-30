@@ -168,6 +168,9 @@ public:
      * Produce a human-readable summary of this geography
      */
     std::string toString() const;
+    // returns wkt representation for given polygon:
+    // "POLYGON ((<Longitude> <Latitude>, <Longitude> <Latitude> .. <Longitude> <Latitude>)[,(..), (..),..(..)])"
+    std::string toWKT() const;
 
 private:
     char* m_data;
@@ -348,6 +351,51 @@ inline std::string GeographyValue::toString() const {
     return oss.str();
 }
 
+inline std::string GeographyValue::toWKT() const {
+    assert(!isNull());
+
+    Polygon poly;
+    poly.initFromGeography(*this);
+    int numLoops = poly.num_loops();
+    assert (numLoops > 0);
+    GeographyPointValue point;
+
+    std::ostringstream oss;
+    oss << "POLYGON (";
+    // Note that we need to reverse the order of holes,
+    // but not of shells.
+    bool is_shell = true;
+    // capture all the loops
+    for (int i = 0; i < numLoops; ++i) {
+        const S2Loop *loop = poly.loop(i);
+        const int numVertices = loop->num_vertices();
+        assert(numVertices >= 3); // each loop will be composed of at least 3 vertices. This does not include repeated end vertex
+        oss << "(";
+        // Capture the first point first.  This is always
+        // First, even if this is a hole or a shell.
+        point = GeographyPointValue(loop->vertex(0));
+        oss << point.formatLngLat() << ", ";
+        int startIdx = (is_shell ? 1 : numVertices-1);
+        int endIdx   = (is_shell ? numVertices : 0);
+        int delta    = (is_shell ? 1 : -1);
+        for (int j = startIdx; j != endIdx; j += delta) {
+            point = GeographyPointValue(loop->vertex(j));
+            oss << point.formatLngLat() << ", ";
+        }
+        // repeat the first vertex to close the loop
+        point = GeographyPointValue(loop->vertex(0));
+        oss << point.formatLngLat() << ")";
+        // last loop?
+        if (i < numLoops -1) {
+            oss << ", " ;
+        }
+        is_shell = false;
+    }
+    oss << ")";
+
+    return oss.str();
+}
+
 template<class Deserializer>
 inline void GeographyValue::deserializeFrom(Deserializer& input,
                                        char* storage,
@@ -439,7 +487,6 @@ inline void Loop::copyViaSerializers(Serializer& output, Deserializer& input) {
 
     output.writeByte(input.readByte()); // origin inside
     int32_t depth = input.readInt();
-    assert(depth >= 0 && depth < 2);
     output.writeInt(depth);
 
     copyBoundViaSerializers(output, input);

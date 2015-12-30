@@ -104,12 +104,13 @@ public class GeographyPointValue {
         return m_longitude;
     }
 
+
     public String formatLngLat() {
-        // Display a maximum of 9 decimal digits after the point.
-        // This gives us precision of around 1 mm.
-        DecimalFormat df = new DecimalFormat("##0.0########");
-        double lng = (Math.abs(m_longitude) < 1.0e-9) ? 0 : m_longitude;
-        double lat = (Math.abs(m_latitude) < 1.0e-9) ? 0 : m_latitude;
+        // Display a maximum of 12 decimal digits after the point.
+        // This gives us precision of around 1/1000th of a mm.
+        DecimalFormat df = new DecimalFormat("##0.0###########");
+        double lng = (Math.abs(m_longitude) < 1.0e-12) ? 0 : m_longitude;
+        double lat = (Math.abs(m_latitude) < 1.0e-12) ? 0 : m_latitude;
         return df.format(lng) + " " + df.format(lat);
     }
 
