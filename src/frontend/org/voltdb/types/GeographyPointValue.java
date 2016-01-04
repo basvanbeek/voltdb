@@ -249,18 +249,15 @@ public class GeographyPointValue {
         double lngFinal = 0.0;
         assert(-180 <= latNorm && latNorm <= 180);
         assert(-180 <= lngNorm && lngNorm <= 180);
-        // System.out.printf("        // longitude = %f, latitude = %f\n", longitude, latitude);
-        // System.out.printf("        // normLng   = %f, normLat  = %f\n", lngNorm, latNorm);
         // Now, latOrig is the latitude in the range [-180,180].
         // Let latWant be latitude in the range [-90, 90]. Then
-        // <ul>
-        //    <li>If latOrig > 90, we have latOrig + latWant = 180.  That
-        //        is, if we rotate our point starting at latOrig through
-        //        the angle latWant, we get +180.</li>
-        //    <li>If latOrig < 90, then we have latOrig - latWant = -180.
-        //        If we rotate our point, which is the southern hemisphere,
-        //        through the angle latWant, then we will have it at -180.</li>
-        // </ul>
+        // o If latOrig > 90, we have latOrig + latWant = 180.  That
+        //   is, if we rotate our point starting at latOrig through
+        //   the angle latWant, we get +180.</li>
+        // o If latOrig < 90, then we have latOrig - latWant = -180.
+        //   If we rotate our point, which is the southern hemisphere,
+        //   through the angle latWant, then we will have it at -180.</li>
+        //
         // In either case, if we change the latitude we then need to change
         // the longitude.  We want to reflect the longitude across the origin.
         boolean flipLng = false;

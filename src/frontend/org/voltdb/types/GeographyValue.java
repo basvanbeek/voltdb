@@ -137,13 +137,22 @@ public class GeographyValue {
     }
 
     /**
-     * Gets the loops that make up the polygon, with the outer loop first.
-     * Include the loop back to the first vertex.  Also, reverse the order
-     * of holes, but keep the first vertex the same.
+     * Return the list of loops of a polygon.  The list has the same
+     * values as the list of loops used to construct the polygon, or
+     * the sequence of WKT loops used to construct the polygon.
      *
-     * @return  The loops in the polygon as a list of a list of points, converted to GeographyPointValue.
+     * @return A list of loops.
      */
     public List<List<GeographyPointValue>> getLoops() {
+        /*
+         * Gets the loops that make up the polygon, with the outer loop first.
+         * Note that we need to convert from XYZPoint to GeographyPointValue.
+         *
+         * Include the loop back to the first vertex.  Also, since WKT wants
+         * holes oriented Clockwise and S2 wants everything oriented CounterClockWise,
+         * reverse the order of holes.  We take care to leave the first vertex
+         * the same.
+         */
         List<List<GeographyPointValue>> llLoops = new ArrayList<List<GeographyPointValue>>();
 
         boolean isShell = true;
