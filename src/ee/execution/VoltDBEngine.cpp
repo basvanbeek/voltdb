@@ -1675,7 +1675,7 @@ void VoltDBEngine::dispatchValidatePartitioningTask(const char *taskParams) {
 }
 
 void VoltDBEngine::collectDRTupleStreamStateInfo() {
-    std::size_t size = 3 * sizeof(int64_t) + 1 + 1;
+    std::size_t size = 3 * sizeof(int64_t) + 4 /*drVersion*/ + 1 /*hasReplicatedStream*/;
     if (m_drReplicatedStream) {
         size += 3 * sizeof(int64_t);
     }
@@ -1684,7 +1684,7 @@ void VoltDBEngine::collectDRTupleStreamStateInfo() {
     m_resultOutput.writeLong(drInfo.seqNum);
     m_resultOutput.writeLong(drInfo.spUniqueId);
     m_resultOutput.writeLong(drInfo.mpUniqueId);
-    m_resultOutput.writeByte(drInfo.drVersion);
+    m_resultOutput.writeInt(drInfo.drVersion);
     if (m_drReplicatedStream) {
         m_resultOutput.writeByte(static_cast<int8_t>(1));
         drInfo = m_drReplicatedStream->getLastCommittedSequenceNumberAndUniqueIds();
@@ -1737,7 +1737,7 @@ void VoltDBEngine::executeTask(TaskType taskType, const char* taskParams) {
     }
     case TASK_TYPE_SET_DR_PROTOCOL_VERSION: {
         ReferenceSerializeInputBE taskInfo(taskParams, std::numeric_limits<std::size_t>::max());
-        uint8_t drVersion = taskInfo.readByte();
+        uint32_t drVersion = taskInfo.readInt();
         m_drStream->setDRProtocolVersion(drVersion);
         if (m_drReplicatedStream) {
             m_drReplicatedStream->setDRProtocolVersion(drVersion);

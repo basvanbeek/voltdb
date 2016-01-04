@@ -969,7 +969,7 @@ public class Site implements Runnable, SiteProcedureConnection, SiteSnapshotConn
         long partitionSequenceNumber = resultBuffer.getLong();
         long partitionSpUniqueId = resultBuffer.getLong();
         long partitionMpUniqueId = resultBuffer.getLong();
-        byte drVersion = resultBuffer.get();
+        int drVersion = resultBuffer.getInt();
         DRLogSegmentId partitionInfo = new DRLogSegmentId(partitionSequenceNumber, partitionSpUniqueId, partitionMpUniqueId);
         byte hasReplicatedStateInfo = resultBuffer.get();
         TupleStreamStateInfo info = null;
@@ -1373,9 +1373,9 @@ public class Site implements Runnable, SiteProcedureConnection, SiteSnapshotConn
     }
 
     @Override
-    public void setDRProtocolVersion(byte drVersion) {
-        ByteBuffer paramBuffer = m_ee.getParamBufferForExecuteTask(1);
-        paramBuffer.put(drVersion);
+    public void setDRProtocolVersion(int drVersion) {
+        ByteBuffer paramBuffer = m_ee.getParamBufferForExecuteTask(4);
+        paramBuffer.putInt(drVersion);
         m_ee.executeTask(TaskType.SET_DR_PROTOCOL_VERSION, paramBuffer);
         hostLog.debug("DR protocol version has been set to " + drVersion);
     }

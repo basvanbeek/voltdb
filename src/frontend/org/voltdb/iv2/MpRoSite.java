@@ -577,7 +577,7 @@ public class MpRoSite implements Runnable, SiteProcedureConnection
     }
 
     @Override
-    public void setDRProtocolVersion(byte drVersion) {
+    public void setDRProtocolVersion(int drVersion) {
         throw new RuntimeException("RO MP Site doesn't do this, shouldn't be here.");
     }
 }
